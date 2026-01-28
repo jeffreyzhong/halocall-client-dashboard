@@ -30,7 +30,7 @@ export async function GET() {
     }
 
     // 3. Check required environment variables
-    // Use SQUARE_ENVIRONMENT to control sandbox vs production (independent of NODE_ENV)
+    // Use SQUARE_ENVIRONMENT to control sandbox vs production (independent of WORK_ENVIRONMENT)
     const useSquareProduction = process.env.SQUARE_ENVIRONMENT === 'production'
     const squareAppId = useSquareProduction
       ? process.env.SQUARE_PRODUCTION_APPLICATION_ID

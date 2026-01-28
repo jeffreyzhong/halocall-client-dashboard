@@ -17,16 +17,16 @@ function createPrismaClient() {
   const pool = globalForPrisma.pool ?? new Pool({ connectionString })
   const adapter = new PrismaPg(pool)
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.WORK_ENVIRONMENT !== 'production') {
     globalForPrisma.pool = pool
   }
 
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env.WORK_ENVIRONMENT === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.WORK_ENVIRONMENT !== 'production') globalForPrisma.prisma = prisma
