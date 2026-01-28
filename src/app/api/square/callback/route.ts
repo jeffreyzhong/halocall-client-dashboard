@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
       ? process.env.SQUARE_PRODUCTION_APPLICATION_ID
       : process.env.SQUARE_SANDBOX_APPLICATION_ID
     const squareAppSecret = useSquareProduction
-      ? process.env.SQUARE_PRODUCTION_ACCESS_TOKEN
-      : process.env.SQUARE_SANDBOX_ACCESS_TOKEN
+      ? process.env.SQUARE_PRODUCTION_APPLICATION_SECRET
+      : process.env.SQUARE_SANDBOX_APPLICATION_SECRET
 
     if (!squareAppId || !squareAppSecret) {
       const redirectUrl = new URL(appUrl)
