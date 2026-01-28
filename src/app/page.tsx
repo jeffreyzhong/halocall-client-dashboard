@@ -51,18 +51,26 @@ export default function Home() {
   const [configMessage, setConfigMessage] = useState<string | null>(null)
   const [isConnectingSquare, setIsConnectingSquare] = useState(false)
   const [squareError, setSquareError] = useState<string | null>(null)
+  const [isPendingSetup, setIsPendingSetup] = useState(false)
+  const [locationsCount, setLocationsCount] = useState<number | null>(null)
 
   // Check for Square OAuth callback results in URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const squareConnected = params.get('square_connected')
+    const locationsParam = params.get('locations_synced')
     const error = params.get('square_error')
     const errorDescription = params.get('square_error_description')
 
     if (squareConnected === 'true') {
-      // Clear URL params and refresh
+      // Show pending setup message instead of reloading
+      setIsPendingSetup(true)
+      setIsConfigured(false)
+      if (locationsParam) {
+        setLocationsCount(parseInt(locationsParam, 10))
+      }
+      // Clear URL params
       window.history.replaceState({}, '', window.location.pathname)
-      window.location.reload()
     } else if (error) {
       setSquareError(errorDescription || 'Failed to connect Square account')
       // Clear URL params
@@ -199,8 +207,45 @@ export default function Home() {
             {isConfigured && <TimeWindowSelector onTimeWindowChange={handleTimeWindowChange} />}
           </div>
 
+          {/* Pending Setup State - After Square Connected */}
+          {isPendingSetup && (
+            <div className="animate-in delay-2">
+              <div className="flex flex-col items-center justify-center py-16 px-6 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-subtle)]">
+                <div className="w-16 h-16 mb-6 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Square Connected Successfully!</h2>
+                <p className="text-sm text-[var(--text-muted)] text-center max-w-md mb-4">
+                  {locationsCount !== null && locationsCount > 0 
+                    ? `We found ${locationsCount} location${locationsCount > 1 ? 's' : ''} in your Square account.`
+                    : 'Your Square account has been connected.'}
+                </p>
+                <div className="bg-[var(--bg-tertiary)] rounded-lg px-6 py-4 max-w-md">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 mt-0.5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-[var(--text-primary)] mb-1">What happens next?</h3>
+                      <p className="text-sm text-[var(--text-muted)]">
+                        The RingBuddy team will connect your phone number and AI agent to your account within the next 24 hours. You&apos;ll receive a notification when everything is ready to go.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-6 text-xs text-[var(--text-muted)] text-center max-w-sm">
+                  Questions? Contact us at support@ringbuddy.ai
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Not Configured State */}
-          {isConfigured === false && (
+          {isConfigured === false && !isPendingSetup && (
             <div className="animate-in delay-2">
               <div className="flex flex-col items-center justify-center py-16 px-6 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-subtle)]">
                 <div className="w-16 h-16 mb-6 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center">

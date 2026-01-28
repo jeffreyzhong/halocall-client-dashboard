@@ -197,6 +197,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 8. Fetch and sync locations from Square
+    let locationsSynced = 0
     try {
       const locationsResponse = await fetch(`${baseUrl}/v2/locations`, {
         headers: {
@@ -247,8 +248,9 @@ export async function GET(request: NextRequest) {
                 },
               })
             }
+            locationsSynced++
           }
-          console.log(`Synced ${locationsData.locations.filter(l => l.status === 'ACTIVE').length} locations for org ${orgId}`)
+          console.log(`Synced ${locationsSynced} locations for org ${orgId}`)
         }
       } else {
         // Log error but don't fail the OAuth flow
@@ -262,6 +264,9 @@ export async function GET(request: NextRequest) {
     // 9. Redirect back to the app with success
     const redirectUrl = new URL(appUrl)
     redirectUrl.searchParams.set('square_connected', 'true')
+    if (locationsSynced > 0) {
+      redirectUrl.searchParams.set('locations_synced', locationsSynced.toString())
+    }
     return NextResponse.redirect(redirectUrl.toString())
 
   } catch (error) {
