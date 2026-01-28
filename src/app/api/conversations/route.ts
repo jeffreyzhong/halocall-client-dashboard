@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Look them up in the users table
-    const user = await prisma.users.findUnique({
+    // 2. Look them up in the user table
+    const user = await prisma.user.findUnique({
       where: { clerk_user_id: userId },
     })
 
@@ -96,24 +96,68 @@ export async function GET(request: NextRequest) {
     const agentId = searchParams.get('agent_id')
     const timeWindow = (searchParams.get('time_window') || 'last_7_days') as TimeWindow
 
-    // 4. Validate agent belongs to user's organization
-    if (agentId) {
-      const agentConfig = await prisma.agents_config.findFirst({
-        where: {
-          clerk_organization_id: user.clerk_organization_id,
-          agent_id: agentId,
-        },
-      })
+    // 4. Get the user's role in their organization from Clerk API
+    const client = await clerkClient()
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId,
+    })
 
-      if (!agentConfig) {
+    const orgMembership = memberships.data.find(
+      (m) => m.organization.id === user.clerk_organization_id
+    )
+
+    if (!orgMembership) {
+      return NextResponse.json({ error: 'User is not a member of the organization' }, { status: 403 })
+    }
+
+    const isAdmin = orgMembership.role === 'org:admin'
+
+    // 5. Validate agent belongs to user based on their role
+    if (agentId) {
+      let hasAccess = false
+
+      if (isAdmin) {
+        // Admin: Check if agent exists in the organization
+        const agentConfig = await prisma.agent_config.findFirst({
+          where: {
+            agent_id: agentId,
+            phone_number_config: {
+              location: {
+                clerk_organization_id: user.clerk_organization_id,
+              },
+            },
+          },
+        })
+        hasAccess = !!agentConfig
+      } else {
+        // Member: Check if agent is at a location the user has access to
+        const accessibleAgent = await prisma.$queryRaw<{ agent_id: string }[]>`
+          SELECT ac.agent_id
+          FROM public.user_location_access ula
+          JOIN public.location l
+            ON l.id = ula.location_id
+           AND l.clerk_organization_id = ula.clerk_organization_id
+          JOIN public.phone_number_config pnc
+            ON pnc.location_id = l.id
+          JOIN public.agent_config ac
+            ON ac.phone_number_id = pnc.id
+          WHERE ula.clerk_organization_id = ${user.clerk_organization_id}
+            AND ula.clerk_user_id = ${user.clerk_user_id}
+            AND ac.agent_id = ${agentId}
+          LIMIT 1
+        `
+        hasAccess = accessibleAgent.length > 0
+      }
+
+      if (!hasAccess) {
         return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
       }
     }
 
-    // 5. Calculate time window
+    // 6. Calculate time window
     const callStartAfterUnix = getTimeWindowStart(timeWindow)
 
-    // 6. Fetch conversations from ElevenLabs API
+    // 7. Fetch conversations from ElevenLabs API
     const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY
 
     if (!elevenLabsApiKey) {
@@ -140,7 +184,7 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
     
-    // 7. Fetch phone numbers for each conversation in parallel
+    // 8. Fetch phone numbers for each conversation in parallel
     const conversationList = data.conversations as Array<{
       conversation_id: string
       agent_id: string
@@ -156,7 +200,7 @@ export async function GET(request: NextRequest) {
     )
     const phoneNumbers = await Promise.all(phoneNumberPromises)
 
-    // 8. Transform and compute stats
+    // 9. Transform and compute stats
     const conversations: ConversationSummary[] = conversationList.map((conv, index) => ({
       conversation_id: conv.conversation_id,
       agent_id: conv.agent_id,

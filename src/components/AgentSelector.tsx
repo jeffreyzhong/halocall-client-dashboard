@@ -7,29 +7,46 @@ interface Agent {
   name: string
 }
 
-interface AgentSelectorProps {
-  onAgentChange: (agent: Agent | null) => void
+interface AgentsResponse {
+  agents: Agent[]
+  configured?: boolean
+  message?: string
+  role?: 'admin' | 'member'
 }
 
-export default function AgentSelector({ onAgentChange }: AgentSelectorProps) {
+interface AgentSelectorProps {
+  onAgentChange: (agent: Agent | null) => void
+  onConfigurationStatus?: (configured: boolean, message?: string) => void
+}
+
+export default function AgentSelector({ onAgentChange, onConfigurationStatus }: AgentSelectorProps) {
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [configMessage, setConfigMessage] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function fetchAgents() {
       try {
         const response = await fetch('/api/agents')
-        const data = await response.json()
+        const data: AgentsResponse = await response.json()
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch agents')
+          throw new Error((data as { error?: string }).error || 'Failed to fetch agents')
         }
 
         setAgents(data.agents)
+        
+        // Handle configuration status
+        if (data.agents.length === 0 && data.message) {
+          setConfigMessage(data.message)
+          onConfigurationStatus?.(data.configured ?? false, data.message)
+        } else {
+          onConfigurationStatus?.(true)
+        }
         
         // Default to the first agent
         if (data.agents.length > 0) {
@@ -44,7 +61,7 @@ export default function AgentSelector({ onAgentChange }: AgentSelectorProps) {
     }
 
     fetchAgents()
-  }, [onAgentChange])
+  }, [onAgentChange, onConfigurationStatus])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -87,10 +104,12 @@ export default function AgentSelector({ onAgentChange }: AgentSelectorProps) {
   if (agents.length === 0) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-subtle)]">
-        <svg className="w-4 h-4 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span className="text-sm text-[var(--text-muted)]">No agents configured</span>
+        <span className="text-sm text-[var(--text-muted)]">
+          {configMessage || 'No agents available'}
+        </span>
       </div>
     )
   }

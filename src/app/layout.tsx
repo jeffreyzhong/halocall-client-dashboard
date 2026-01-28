@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'VoiceAI Dashboard',
+  title: 'RingBuddy Dashboard',
   description: 'AI Voice Agent Dashboard - Monitor and manage your voice agents',
 }
 

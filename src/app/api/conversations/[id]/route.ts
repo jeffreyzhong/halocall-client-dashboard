@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -171,8 +171,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Look them up in the users table
-    const user = await prisma.users.findUnique({
+    // 2. Look them up in the user table
+    const user = await prisma.user.findUnique({
       where: { clerk_user_id: userId },
     })
 
@@ -206,19 +206,63 @@ export async function GET(
 
     const data: ElevenLabsConversationResponse = await response.json()
 
-    // 4. Verify the agent belongs to the user's organization
-    const agentConfig = await prisma.agents_config.findFirst({
-      where: {
-        clerk_organization_id: user.clerk_organization_id,
-        agent_id: data.agent_id,
-      },
+    // 4. Get the user's role in their organization from Clerk API
+    const client = await clerkClient()
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId,
     })
 
-    if (!agentConfig) {
+    const orgMembership = memberships.data.find(
+      (m) => m.organization.id === user.clerk_organization_id
+    )
+
+    if (!orgMembership) {
+      return NextResponse.json({ error: 'User is not a member of the organization' }, { status: 403 })
+    }
+
+    const isAdmin = orgMembership.role === 'org:admin'
+
+    // 5. Verify the agent belongs to the user based on their role
+    let hasAccess = false
+
+    if (isAdmin) {
+      // Admin: Check if agent exists in the organization
+      const agentConfig = await prisma.agent_config.findFirst({
+        where: {
+          agent_id: data.agent_id,
+          phone_number_config: {
+            location: {
+              clerk_organization_id: user.clerk_organization_id,
+            },
+          },
+        },
+      })
+      hasAccess = !!agentConfig
+    } else {
+      // Member: Check if agent is at a location the user has access to
+      const accessibleAgent = await prisma.$queryRaw<{ agent_id: string }[]>`
+        SELECT ac.agent_id
+        FROM public.user_location_access ula
+        JOIN public.location l
+          ON l.id = ula.location_id
+         AND l.clerk_organization_id = ula.clerk_organization_id
+        JOIN public.phone_number_config pnc
+          ON pnc.location_id = l.id
+        JOIN public.agent_config ac
+          ON ac.phone_number_id = pnc.id
+        WHERE ula.clerk_organization_id = ${user.clerk_organization_id}
+          AND ula.clerk_user_id = ${user.clerk_user_id}
+          AND ac.agent_id = ${data.agent_id}
+        LIMIT 1
+      `
+      hasAccess = accessibleAgent.length > 0
+    }
+
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
-    // 5. Build tool results map and fetch agent names for any transfer_to_agent tool calls
+    // 6. Build tool results map and fetch agent names for any transfer_to_agent tool calls
     const toolResultsMap = new Map<string, ToolResult>()
     for (const msg of data.transcript || []) {
       if (msg.tool_results) {
@@ -252,7 +296,7 @@ export async function GET(
       }
     }
 
-    // 6. Transform and return the data
+    // 7. Transform and return the data
     return NextResponse.json({
       conversation_id: data.conversation_id,
       agent_id: data.agent_id,
