@@ -49,21 +49,15 @@ export async function GET() {
     })).toString('base64url')
 
     // 5. Build the Square authorization URL
+    // For code flow, redirect_uri is registered in Developer Console, not in the URL
     const baseUrl = useSquareProduction
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com'
-
-    const appProductionUrl = process.env.APP_PRODUCTION_URL
-    if (!appProductionUrl) {
-      return NextResponse.json({ error: 'APP_PRODUCTION_URL not configured' }, { status: 500 })
-    }
-    const redirectUri = `${appProductionUrl}/api/square/callback`
 
     const authUrl = new URL(`${baseUrl}/oauth2/authorize`)
     authUrl.searchParams.set('client_id', squareAppId)
     authUrl.searchParams.set('scope', SQUARE_SCOPES)
     authUrl.searchParams.set('state', state)
-    authUrl.searchParams.set('redirect_uri', redirectUri)
 
     // 6. Return the authorization URL
     return NextResponse.json({ 

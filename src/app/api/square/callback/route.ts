@@ -105,15 +105,7 @@ export async function GET(request: NextRequest) {
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com'
 
-    const appProductionUrl = process.env.APP_PRODUCTION_URL
-    if (!appProductionUrl) {
-      const redirectUrl = new URL(appUrl)
-      redirectUrl.searchParams.set('square_error', 'config_error')
-      redirectUrl.searchParams.set('square_error_description', 'APP_PRODUCTION_URL not configured')
-      return NextResponse.redirect(redirectUrl.toString())
-    }
-    const redirectUri = `${appProductionUrl}/api/square/callback`
-
+    // For code flow, redirect_uri is not needed in token exchange
     const tokenResponse = await fetch(`${baseUrl}/oauth2/token`, {
       method: 'POST',
       headers: {
@@ -125,7 +117,6 @@ export async function GET(request: NextRequest) {
         client_secret: squareAppSecret,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
       }),
     })
 
