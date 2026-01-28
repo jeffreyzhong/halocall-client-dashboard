@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.APP_PRODUCTION_URL!
 
     // 1. Handle error responses from Square
     if (error) {
@@ -104,7 +104,14 @@ export async function GET(request: NextRequest) {
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com'
 
-    const redirectUri = `${appUrl}/api/square/callback`
+    const appProductionUrl = process.env.APP_PRODUCTION_URL
+    if (!appProductionUrl) {
+      const redirectUrl = new URL(appUrl)
+      redirectUrl.searchParams.set('square_error', 'config_error')
+      redirectUrl.searchParams.set('square_error_description', 'APP_PRODUCTION_URL not configured')
+      return NextResponse.redirect(redirectUrl.toString())
+    }
+    const redirectUri = `${appProductionUrl}/api/square/callback`
 
     const tokenResponse = await fetch(`${baseUrl}/oauth2/token`, {
       method: 'POST',
@@ -177,7 +184,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in Square OAuth callback:', error)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.APP_PRODUCTION_URL || 'http://localhost:3000'
     const redirectUrl = new URL(appUrl)
     redirectUrl.searchParams.set('square_error', 'internal_error')
     redirectUrl.searchParams.set('square_error_description', 'An unexpected error occurred')

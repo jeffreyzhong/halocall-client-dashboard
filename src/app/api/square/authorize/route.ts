@@ -34,8 +34,6 @@ export async function GET() {
     const squareAppId = isProduction
       ? process.env.SQUARE_PRODUCTION_APPLICATION_ID
       : process.env.SQUARE_SANDBOX_APPLICATION_ID
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-
     if (!squareAppId) {
       return NextResponse.json({ error: 'Square Application ID not configured' }, { status: 500 })
     }
@@ -54,7 +52,11 @@ export async function GET() {
       ? 'https://connect.squareup.com'
       : 'https://connect.squareupsandbox.com'
 
-    const redirectUri = `${appUrl}/api/square/callback`
+    const appProductionUrl = process.env.APP_PRODUCTION_URL
+    if (!appProductionUrl) {
+      return NextResponse.json({ error: 'APP_PRODUCTION_URL not configured' }, { status: 500 })
+    }
+    const redirectUri = `${appProductionUrl}/api/square/callback`
 
     const authUrl = new URL(`${baseUrl}/oauth2/authorize`)
     authUrl.searchParams.set('client_id', squareAppId)
