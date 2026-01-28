@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 
 // Simple encryption utilities for storing tokens
@@ -27,6 +28,32 @@ interface SquareTokenResponse {
 interface SquareErrorResponse {
   message?: string
   type?: string
+}
+
+interface SquareAddress {
+  address_line_1?: string
+  address_line_2?: string
+  locality?: string
+  administrative_district_level_1?: string
+  postal_code?: string
+  country?: string
+}
+
+interface SquareLocation {
+  id: string
+  name: string
+  address?: SquareAddress
+  timezone?: string
+  status?: string
+  country?: string
+  phone_number?: string
+  business_name?: string
+  type?: string
+}
+
+interface SquareLocationsResponse {
+  locations?: SquareLocation[]
+  errors?: SquareErrorResponse[]
 }
 
 export async function GET(request: NextRequest) {
@@ -169,7 +196,70 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // 8. Redirect back to the app with success
+    // 8. Fetch and sync locations from Square
+    try {
+      const locationsResponse = await fetch(`${baseUrl}/v2/locations`, {
+        headers: {
+          'Square-Version': '2024-01-18',
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (locationsResponse.ok) {
+        const locationsData: SquareLocationsResponse = await locationsResponse.json()
+        
+        if (locationsData.locations && locationsData.locations.length > 0) {
+          // Upsert each location
+          for (const squareLocation of locationsData.locations) {
+            // Only sync active locations
+            if (squareLocation.status !== 'ACTIVE') continue
+
+            // Cast address to JSON-compatible type for Prisma
+            const addressJson = (squareLocation.address || {}) as Prisma.InputJsonValue
+
+            // Check if location already exists
+            const existingLocation = await prisma.location.findFirst({
+              where: {
+                clerk_organization_id: orgId,
+                merchant_location_id: squareLocation.id,
+              },
+            })
+
+            if (existingLocation) {
+              // Update existing location
+              await prisma.location.update({
+                where: { id: existingLocation.id },
+                data: {
+                  timezone: squareLocation.timezone || 'America/Los_Angeles',
+                  address: addressJson,
+                  updated_at: new Date(),
+                },
+              })
+            } else {
+              // Create new location
+              await prisma.location.create({
+                data: {
+                  clerk_organization_id: orgId,
+                  merchant_location_id: squareLocation.id,
+                  timezone: squareLocation.timezone || 'America/Los_Angeles',
+                  address: addressJson,
+                },
+              })
+            }
+          }
+          console.log(`Synced ${locationsData.locations.filter(l => l.status === 'ACTIVE').length} locations for org ${orgId}`)
+        }
+      } else {
+        // Log error but don't fail the OAuth flow
+        console.error('Failed to fetch Square locations:', await locationsResponse.text())
+      }
+    } catch (locationError) {
+      // Log error but don't fail the OAuth flow
+      console.error('Error syncing Square locations:', locationError)
+    }
+
+    // 9. Redirect back to the app with success
     const redirectUrl = new URL(appUrl)
     redirectUrl.searchParams.set('square_connected', 'true')
     return NextResponse.redirect(redirectUrl.toString())
