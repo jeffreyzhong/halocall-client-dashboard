@@ -1,4 +1,4 @@
-# RingBuddy – Internal Knowledge Base
+# RingBuddy
 
 ## 1. What RingBuddy Is
 
