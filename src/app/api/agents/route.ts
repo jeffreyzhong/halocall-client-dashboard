@@ -19,13 +19,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('[agents] Looking up user with clerk_user_id:', userId)
+
     // 2. Look them up in the user table
     const user = await prisma.user.findUnique({
       where: { clerk_user_id: userId },
     })
 
+    console.log('[agents] User lookup result:', user ? `Found: ${user.email}` : 'Not found')
+
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'User not found', clerk_user_id: userId }, { status: 404 })
     }
 
     // 3. Get their clerk_organization_id and clerk_user_id

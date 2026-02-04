@@ -158,35 +158,24 @@ export default function Home() {
     <>
       <SignedOut>
         <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
-          <div className="flex flex-col items-center gap-8">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-lg bg-[var(--text-primary)] flex items-center justify-center">
-                <svg className="w-5 h-5 text-[var(--bg-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <span className="text-xl font-semibold text-[var(--text-primary)]">RingBuddy</span>
-            </div>
-            
-            <SignIn 
-              routing="hash"
-              appearance={{
-                elements: {
-                  rootBox: 'mx-auto',
-                  card: 'bg-[var(--bg-secondary)] border border-[var(--border-subtle)]',
-                  headerTitle: 'text-[var(--text-primary)]',
-                  headerSubtitle: 'text-[var(--text-secondary)]',
-                  formFieldLabel: 'text-[var(--text-secondary)]',
-                  formFieldInput: 'bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]',
-                  formButtonPrimary: 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:bg-[var(--text-secondary)]',
-                  footerActionLink: 'text-[var(--text-secondary)]',
-                  socialButtonsBlockButton: 'bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]',
-                  dividerLine: 'bg-[var(--border-subtle)]',
-                  dividerText: 'text-[var(--text-muted)]',
-                },
-              }}
-            />
-          </div>
+          <SignIn 
+            routing="hash"
+            appearance={{
+              elements: {
+                rootBox: 'mx-auto',
+                card: 'bg-[var(--bg-secondary)] border border-[var(--border-subtle)]',
+                headerTitle: 'text-[var(--text-primary)]',
+                headerSubtitle: 'text-[var(--text-secondary)]',
+                formFieldLabel: 'text-[var(--text-secondary)]',
+                formFieldInput: 'bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]',
+                formButtonPrimary: 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:bg-[var(--text-secondary)]',
+                footerActionLink: 'text-[var(--text-secondary)]',
+                socialButtonsBlockButton: 'bg-[var(--bg-tertiary)] border-[var(--border-subtle)] text-[var(--text-primary)]',
+                dividerLine: 'bg-[var(--border-subtle)]',
+                dividerText: 'text-[var(--text-muted)]',
+              },
+            }}
+          />
         </div>
       </SignedOut>
       
@@ -211,8 +200,8 @@ export default function Home() {
           {isPendingSetup && (
             <div className="animate-in delay-2">
               <div className="flex flex-col items-center justify-center py-16 px-6 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-subtle)]">
-                <div className="w-16 h-16 mb-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-16 h-16 mb-6 rounded-full bg-[var(--accent-green-muted)] flex items-center justify-center">
+                  <svg className="w-8 h-8 text-[var(--accent-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -224,15 +213,15 @@ export default function Home() {
                 </p>
                 <div className="bg-[var(--bg-tertiary)] rounded-lg px-6 py-4 max-w-md">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 mt-0.5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <div className="w-8 h-8 mt-0.5 rounded-full bg-[var(--accent-blue-muted)] flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-[var(--accent-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-[var(--text-primary)] mb-1">What happens next?</h3>
                       <p className="text-sm text-[var(--text-muted)]">
-                        The RingBuddy team will connect your phone number and AI agent to your account within the next 24 hours. You&apos;ll receive a notification when everything is ready to go.
+                        The HaloCall team will connect your phone number and AI agent to your account within the next 24 hours. You&apos;ll receive a notification when everything is ready to go.
                       </p>
                     </div>
                   </div>
@@ -270,7 +259,7 @@ export default function Home() {
                 <button
                   onClick={handleConnectSquare}
                   disabled={isConnectingSquare}
-                  className="flex items-center gap-3 px-6 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-600 text-white font-medium rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  className="flex items-center gap-3 px-6 py-3 bg-[var(--accent-green)] hover:bg-[var(--accent-green-hover)] disabled:opacity-60 text-white font-medium rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
                 >
                   {isConnectingSquare ? (
                     <>
