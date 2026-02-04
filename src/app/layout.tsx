@@ -22,6 +22,9 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: 'HaloCall Dashboard',
   description: 'AI Voice Agent Dashboard - Monitor and manage your voice agents',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
