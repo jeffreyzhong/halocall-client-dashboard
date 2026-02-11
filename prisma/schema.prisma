@@ -43,13 +43,29 @@ model merchant {
   organization                   organization? @relation(fields: [clerk_organization_id], references: [clerk_organization_id], onDelete: Cascade, map: "merchants_clerk_organization_id_fkey")
 }
 
+model knowledge_base {
+  id                      BigInt       @id @default(autoincrement())
+  created_at              DateTime     @default(dbgenerated("(now() AT TIME ZONE 'America/Los_Angeles'::text)")) @db.Timestamptz(6)
+  updated_at              DateTime     @default(dbgenerated("(now() AT TIME ZONE 'America/Los_Angeles'::text)")) @db.Timestamptz(6)
+  clerk_organization_id   String
+  title                   String
+  supabase_storage_path   String
+  elevenlabs_document_id  String?
+  source_url              String?
+  agent_ids               String[]
+  organization            organization @relation(fields: [clerk_organization_id], references: [clerk_organization_id], onDelete: Cascade, map: "knowledge_base_clerk_organization_id_fkey")
+
+  @@index([clerk_organization_id], map: "knowledge_base_clerk_organization_id_idx")
+}
+
 model organization {
-  id                      BigInt     @id(map: "organizations_pkey") @default(autoincrement())
-  created_at              DateTime   @default(dbgenerated("(now() AT TIME ZONE 'America/Los_Angeles'::text)")) @db.Timestamptz(6)
-  updated_at              DateTime   @default(dbgenerated("(now() AT TIME ZONE 'America/Los_Angeles'::text)")) @db.Timestamptz(6)
-  clerk_organization_id   String     @unique(map: "organizations_clerk_organization_id_key")
+  id                      BigInt          @id(map: "organizations_pkey") @default(autoincrement())
+  created_at              DateTime        @default(dbgenerated("(now() AT TIME ZONE 'America/Los_Angeles'::text)")) @db.Timestamptz(6)
+  updated_at              DateTime        @default(dbgenerated("(now() AT TIME ZONE 'America/Los_Angeles'::text)")) @db.Timestamptz(6)
+  clerk_organization_id   String          @unique(map: "organizations_clerk_organization_id_key")
   clerk_organization_name String
   stripe_customer_id      String?
+  knowledge_base          knowledge_base[]
   location                location[]
   merchant                merchant?
   user                    user[]
