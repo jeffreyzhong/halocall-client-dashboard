@@ -201,8 +201,10 @@ export async function PUT(
 
     if (agentIds.length > 0) {
       try {
-        const doc = await elevenlabs.conversationalAi.knowledgeBase.documents.createFromText({
-          text: content,
+        const mdBlob = new Blob([content], { type: 'text/markdown' })
+        const mdFile = new File([mdBlob], `${title.trim()}.md`, { type: 'text/markdown' })
+        const doc = await elevenlabs.conversationalAi.knowledgeBase.documents.createFromFile({
+          file: mdFile,
           name: title.trim(),
         })
         newDocumentId = doc.id
@@ -219,9 +221,9 @@ export async function PUT(
             conversationConfig: {
               agent: {
                 prompt: {
-                  knowledgeBase: [
-                    { type: 'text', name: title.trim(), id: newDocumentId },
-                  ],
+                    knowledgeBase: [
+                      { type: 'file', name: title.trim(), id: newDocumentId },
+                    ],
                 },
               },
             },
