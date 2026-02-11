@@ -221,14 +221,13 @@ export async function PUT(
             conversationConfig: {
               agent: {
                 prompt: {
-                    knowledgeBase: [
-                      { type: 'file', name: title.trim(), id: newDocumentId },
-                    ],
+                  knowledgeBase: [
+                    { type: 'file' as const, name: title.trim(), id: newDocumentId! },
+                  ],
                 },
               },
             },
           })
-          console.log('[knowledge-base] Associated KB with agent:', agentId)
         } catch (error) {
           console.error(`[knowledge-base] Error updating agent ${agentId}:`, error)
         }

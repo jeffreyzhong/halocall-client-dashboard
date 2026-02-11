@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
                 agent: {
                   prompt: {
                     knowledgeBase: [
-                      { type: 'file', name: title.trim(), id: elevenLabsDocumentId },
+                      { type: 'file' as const, name: title.trim(), id: elevenLabsDocumentId! },
                     ],
                   },
                 },
